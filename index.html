@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LETUS QUEST: 150kg의 설렘을 입성시켜라!</title>
+<title>LETUS QUEST: 150kg의 설렘을 무사히 전달해라!</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Galmuri11&display=swap');
 
@@ -261,7 +261,7 @@ const STAGES = [
   {
     badge: 'STAGE 1 / 5',
     speakerIcon: '📦', speakerName: '현장 관리자 김반장',
-    text: '안마의자 100세트가 입고됐습니다!\n어떻게 보관하시겠습니까?',
+    text: '안마의자 1,000세트가 입고됐습니다!\n어떻게 보관하시겠습니까?',
     options: [
       { text: 'A. 일단 쌓고 보자! 공간 활용이 최고야', correct: false },
       { text: 'B. 유닛별로 분류해 즉시 출고 가능하게 정리!', correct: true }
@@ -1085,15 +1085,15 @@ function showEnding() {
   if (sc === 5) {
     rank = '👑'; title = '레터스급 전문가!'; titleColor = '#ffe600';
     stars = '★★★★★';
-    desc = `<strong>완벽한 풀필먼트의 정석!</strong><br><br>창고 정리부터 고객 인사까지, 모든 단계를 프로답게 완수했습니다.<br><br>레터스와 함께라면 어떤 중량물도, 어떤 현관문도 문제없습니다. 사장님의 제품이 고객의 공간에서 가장 빛나는 모습으로 태어날 수 있도록 — 레터스가 그 마지막 10m를 책임집니다.`;
+    desc = `<strong>완벽한 풀필먼트의 정석!</strong><br><br>창고 정리부터 고객 인사까지, 모든 단계를 프로답게 완수했습니다.<br><br>레터스와 함께라면 어떤 돌발 상황도 문제없습니다. 사장님의 제품이 고객의 공간에서 가장 빛나는 모습으로 태어날 수 있도록 — 레터스가 그 마지막 10m를 책임집니다.`;
   } else if (sc >= 3) {
     rank = '🛠️'; title = '준수한 설치 관리자'; titleColor = '#58bf6f';
     stars = '★'.repeat(sc) + '☆'.repeat(5 - sc);
-    desc = `<strong>${sc}점 / 5점</strong><br><br>대부분의 상황을 잘 처리했지만, 몇 가지 상황에서 브랜드 가치가 조금 깎였습니다.<br><br>가구 시공은 운송에서 설치까지의 과정 속에서 다양한 위험을 마주합니다. 레터스의 전문 시공팀과 함께 고객 경험을 완벽하게 완성하세요.`;
+    desc = `<strong>${sc}점 / 5점</strong><br><br>대부분의 상황을 잘 처리했지만, 몇 가지 상황에서 브랜드 가치가 치명적으로 감소했습니다.<br><br>가구 시공은 운송에서 설치까지의 과정 속에서 다양한 위험을 마주합니다. 레터스의 전문 시공팀과 함께 고객 경험을 완벽하게 완성하세요.`;
   } else {
     rank = '😰'; title = '위기의 사장님...'; titleColor = '#ff4466';
     stars = '★'.repeat(sc) + '☆'.repeat(5 - sc);
-    desc = `<strong>${sc}점 / 5점</strong><br><br>박스만 옮긴다고 물류가 아닙니다.<br>브랜드 가치가 현관문 앞 10m에서 조용히 깎이고 있습니다.<br><br>고객의 첫 경험 = 브랜드의 영원한 첫인상.<br>레터스가 그 10m를 바꿔드릴 수 있습니다.`;
+    desc = `<strong>${sc}점 / 5점</strong><br><br>박스만 옮긴다고 물류가 아닙니다.<br>브랜드 가치가 현관문 앞 10m에서 조용히 내려가고 있습니다.<br><br>고객의 첫 경험 = 브랜드의 영원한 첫인상.<br>레터스가 그 10m를 바꿔드릴 수 있습니다.`;
   }
 
   document.getElementById('end-rank').innerText  = rank;
