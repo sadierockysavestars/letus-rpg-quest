@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LETUS QUEST: 150kg의 설렘을 입성시켜라!</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Galmuri11&display=swap');
+
+:root {
+  --bg: #0a0a0f;
+  --panel: #12121a;
+  --border: #2a2a3e;
+  --accent: #58bf6f;
+  --accent-dark: #3a9a50;
+  --accent2: #ffe600;
+  --red: #ff4466;
+  --white: #e8e8f0;
+  --grey: #4a4a6a;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  font-family: 'Galmuri11', monospace;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 16px;
+}
+
+#game-wrap {
+  width: 520px;
+  max-width: 100%;
+  position: relative;
+}
+
+/* ── HEADER ── */
+#game-header {
+  background: var(--panel);
+  border: 2px solid var(--accent);
+  border-bottom: none;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+#game-title { color: var(--accent); font-size: 0.75rem; letter-spacing: 2px; }
+#score-bar  { display: flex; gap: 6px; align-items: center; }
+.star { font-size: 1rem; color: var(--grey); transition: color 0.3s, transform 0.3s; }
+.star.earned { color: var(--accent2); transform: scale(1.2); }
+
+/* ── CANVAS ── */
+#canvas-wrap {
+  border-left: 2px solid var(--accent);
+  border-right: 2px solid var(--accent);
+  position: relative; overflow: hidden;
+}
+canvas {
+  display: block; width: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+#stage-badge {
+  position: absolute; top: 8px; right: 10px;
+  background: rgba(0,0,0,0.72);
+  border: 1px solid var(--accent);
+  color: var(--accent); font-size: 0.65rem;
+  padding: 3px 7px; letter-spacing: 1px;
+}
+
+/* ── DIALOGUE ── */
+#dialogue-box {
+  background: var(--panel);
+  border: 2px solid var(--accent);
+  border-top: 3px solid var(--accent2);
+}
+#speaker-bar {
+  background: var(--accent2);
+  padding: 6px 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+#speaker-icon { font-size: 1.1rem; }
+#speaker-name { color: #000; font-size: 0.75rem; font-weight: bold; letter-spacing: 1px; }
+#text-area { padding: 12px 14px; min-height: 52px; }
+#dialogue-text { color: var(--white); font-size: 0.82rem; line-height: 1.7; }
+#cursor-blink {
+  display: inline-block; width: 8px; height: 14px;
+  background: var(--accent); margin-left: 2px; vertical-align: middle;
+  animation: blink 0.7s step-end infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+#feedback-bar {
+  display: none; padding: 8px 14px;
+  font-size: 0.78rem; border-top: 1px solid var(--border); line-height: 1.5;
+}
+#feedback-bar.correct { color: var(--accent); border-top-color: var(--accent); }
+#feedback-bar.wrong   { color: var(--red);    border-top-color: var(--red); }
+
+/* ── OPTIONS ── */
+#options-area {
+  padding: 10px 14px 14px;
+  display: flex; flex-direction: column; gap: 7px;
+  border-top: 1px solid var(--border);
+}
+.opt-btn {
+  background: transparent; border: 1.5px solid var(--grey);
+  color: var(--white); padding: 9px 12px;
+  font-family: 'Galmuri11', monospace; font-size: 0.78rem;
+  cursor: pointer; text-align: left; transition: all 0.15s;
+}
+.opt-btn::before { content: '▶'; color: var(--accent); margin-right: 8px; opacity: 0; transition: opacity 0.15s; }
+.opt-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: rgba(88,191,111,0.09);
+  padding-left: 16px;
+}
+.opt-btn:hover:not(:disabled)::before { opacity: 1; }
+.opt-btn:disabled { cursor: not-allowed; opacity: 0.4; }
+.opt-btn.highlight-correct { border-color: var(--accent) !important; color: var(--accent) !important; background: rgba(88,191,111,0.12) !important; }
+.opt-btn.highlight-wrong   { border-color: var(--red) !important;    color: var(--red) !important;    background: rgba(255,68,102,0.10) !important; }
+
+#moving-msg {
+  display: none; padding: 14px; text-align: center;
+  color: var(--grey); font-size: 0.78rem; letter-spacing: 1px;
+  border-top: 1px solid var(--border);
+}
+#moving-msg span { animation: blink 0.8s step-end infinite; }
+
+/* ── ENDING ── */
+#ending-screen {
+  display: none; position: absolute; top:0; left:0; width:100%; height:100%;
+  background: rgba(0,0,0,0.95);
+  flex-direction: column; justify-content: center; align-items: center;
+  text-align: center; padding: 30px 24px; z-index: 100;
+}
+#end-rank  { font-size: 2.5rem; margin-bottom: 10px; animation: popIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
+#end-title { font-size: 1rem; letter-spacing: 2px; margin-bottom: 16px; }
+#end-stars { display: flex; gap: 8px; margin-bottom: 18px; font-size: 1.4rem; }
+#end-desc  {
+  color: #aaa; font-size: 0.78rem; line-height: 1.9; max-width: 360px;
+  margin-bottom: 22px; border: 1px solid var(--border);
+  padding: 14px 16px; text-align: left;
+}
+#end-desc strong { color: var(--accent); }
+.cta-btn {
+  display: inline-block; background: var(--accent); color: #000;
+  padding: 12px 26px; font-family: 'Galmuri11', monospace;
+  font-size: 0.8rem; font-weight: bold; text-decoration: none;
+  letter-spacing: 1px; border: 2px solid #fff; transition: all 0.2s; margin-bottom: 10px;
+}
+.cta-btn:hover { background: var(--accent2); }
+.retry-btn {
+  display: inline-block; background: transparent; border: 1.5px solid var(--grey);
+  color: var(--grey); padding: 8px 20px; font-family: 'Galmuri11', monospace;
+  font-size: 0.72rem; cursor: pointer; letter-spacing: 1px; transition: all 0.2s;
+}
+.retry-btn:hover { border-color: var(--white); color: var(--white); }
+@keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* ── TITLE ── */
+#title-screen {
+  position: absolute; top:0; left:0; width:100%; height:100%;
+  background: var(--bg);
+  display: flex; flex-direction: column; justify-content: center;
+  align-items: center; text-align: center; z-index: 200; padding: 20px;
+}
+#title-logo { font-size: 0.7rem; letter-spacing: 4px; color: var(--accent); margin-bottom: 6px; }
+#title-main { font-size: 1.05rem; color: var(--white); line-height: 1.6; margin-bottom: 6px; }
+#title-sub  { font-size: 0.72rem; color: var(--grey); margin-bottom: 24px; line-height: 1.7; }
+.start-btn {
+  background: var(--accent2); color: #000; border: none;
+  padding: 12px 30px; font-family: 'Galmuri11', monospace;
+  font-size: 0.85rem; font-weight: bold; cursor: pointer;
+  letter-spacing: 2px; animation: glowPulse 1.5s ease-in-out infinite;
+}
+@keyframes glowPulse {
+  0%,100% { box-shadow: 0 0 8px var(--accent2); }
+  50%      { box-shadow: 0 0 24px var(--accent2); }
+}
+.title-deco { color: var(--grey); font-size: 0.65rem; margin-top: 14px; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+<div id="game-wrap">
+
+  <!-- 타이틀 -->
+  <div id="title-screen">
+    <div id="title-logo">LETUS FULFILLMENT QUEST</div>
+    <div id="title-main">150kg의 설렘을<br>무사히 입성시켜라!</div>
+    <div id="title-sub">창고에서 고객의 거실까지<br>5단계 설치 물류 퀘스트<br>당신의 선택이 브랜드를 결정합니다</div>
+    <button class="start-btn" onclick="startGame()">▶ 퀘스트 시작</button>
+    <div class="title-deco">▲▼ PRESS START ▲▼</div>
+  </div>
+
+  <!-- 헤더 -->
+  <div id="game-header">
+    <div id="game-title">LETUS RPG ✦ 설치물류 퀘스트</div>
+    <div id="score-bar">
+      <span class="star" id="s1">★</span>
+      <span class="star" id="s2">★</span>
+      <span class="star" id="s3">★</span>
+      <span class="star" id="s4">★</span>
+      <span class="star" id="s5">★</span>
+    </div>
+  </div>
+
+  <!-- 캔버스 -->
+  <div id="canvas-wrap">
+    <canvas id="gameCanvas" width="520" height="300"></canvas>
+    <div id="stage-badge">STAGE 1 / 5</div>
+  </div>
+
+  <!-- 대화창 -->
+  <div id="dialogue-box">
+    <div id="speaker-bar">
+      <span id="speaker-icon">📦</span>
+      <span id="speaker-name">현장 관리자 김반장</span>
+    </div>
+    <div id="text-area">
+      <span id="dialogue-text"></span><span id="cursor-blink"></span>
+    </div>
+    <div id="feedback-bar"></div>
+    <div id="options-area"></div>
+    <div id="moving-msg">다음 현장으로 이동 중 <span>...</span></div>
+  </div>
+
+  <!-- 엔딩 -->
+  <div id="ending-screen">
+    <div id="end-rank">🏆</div>
+    <div id="end-title" style="color:var(--accent2)"></div>
+    <div id="end-stars"></div>
+    <div id="end-desc"></div>
+    <a href="https://www.letus4u.com/Contact" class="cta-btn">🛠️ 우리 가구의 가치 높이기 🛠️</a><br>
+    <button class="retry-btn" onclick="retryGame()">↺ 다시 도전하기</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  캔버스 초기화
+// ═══════════════════════════════════════════════
+const C   = document.getElementById('gameCanvas');
+const ctx = C.getContext('2d');
+const W   = C.width;   // 520
+const H   = C.height;  // 300
+
+// 픽셀 채우기 단축함수
+function px(x, y, w, h, c) {
+  ctx.fillStyle = c;
+  ctx.fillRect(Math.round(x), Math.round(y), w, h);
+}
+
+// ═══════════════════════════════════════════════
+//  스테이지 데이터
+// ═══════════════════════════════════════════════
+const STAGES = [
+  {
+    badge: 'STAGE 1 / 5',
+    speakerIcon: '📦', speakerName: '현장 관리자 김반장',
+    text: '안마의자 100세트가 입고됐습니다!\n어떻게 보관하시겠습니까?',
+    options: [
+      { text: 'A. 일단 쌓고 보자! 공간 활용이 최고야', correct: false },
+      { text: 'B. 유닛별로 분류해 즉시 출고 가능하게 정리!', correct: true }
+    ],
+    feedback: {
+      correct: '✅ 완벽합니다! 창고 단계부터 출고 동선을 확보하면 이후 모든 과정이 매끄러워집니다.',
+      wrong:   '❌ 쌓아두면 꺼낼 때 시간이 두 배! 창고 정리가 좋은 서비스의 첫 단추입니다.'
+    },
+    scene: 'warehouse'
+  },
+  {
+    badge: 'STAGE 2 / 5',
+    speakerIcon: '🚚', speakerName: '시공팀 박팀장',
+    text: '출발합니다! 고객님 댁까지\n어떤 방식으로 이동할까요?',
+    options: [
+      { text: 'A. 빠른 길로 빠르게! 속도가 생명!', correct: false },
+      { text: 'B. 진동을 최소화하며 약속 시간에 안전하게', correct: true }
+    ],
+    feedback: {
+      correct: '✅ 중량물은 운반 중 진동 하나가 불량품을 만듭니다. 안전 운송이 핵심입니다!',
+      wrong:   '❌ 과속 코너링 한 번에 100만 원짜리 의자가 망가집니다. 이미 늦었습니다.'
+    },
+    scene: 'truck'
+  },
+  {
+    badge: 'STAGE 3 / 5',
+    speakerIcon: '🚪', speakerName: '시공팀 박팀장',
+    text: '현관 앞에 도착! 제품은 넉다운 방식으로\n현장 조립이 필요합니다. 어떻게 진입할까요?',
+    options: [
+      { text: 'A. 일단 들어가서 생각하자! 어떻게든 되겠지', correct: false },
+      { text: 'B. 보양재 먼저 설치하고 부재별로 차분하게 진입', correct: true }
+    ],
+    feedback: {
+      correct: '✅ 전문가의 판단입니다! 보양재로 바닥을 보호하고 부재별로 진입하면 안전하고 효율적입니다.',
+      wrong:   '❌ 바닥 스크래치 발생, 벽 모서리 충돌! 현장 보호는 시공의 기본입니다.'
+    },
+    scene: 'door'
+  },
+  {
+    badge: 'STAGE 4 / 5',
+    speakerIcon: '🔧', speakerName: '시공팀 박팀장',
+    text: '현장 조립 중! 각 부재를 맞추다 보니\n작동 시 미세한 소음이 납니다. 어떻게 할까요?',
+    options: [
+      { text: 'A. 바닥이 문제니까 패드를 깔라고 하자', correct: false },
+      { text: 'B. 직접 꼼꼼하게 점검해 소음 원인을 잡는다', correct: true }
+    ],
+    feedback: {
+      correct: '✅ 브랜드 리뷰를 지키는 결정! 소음 민원은 브랜드 평점을 직격합니다.',
+      wrong:   "❌ '소리 나는 고물' 1점짜리 리뷰가 달립니다. 제조사 평판에 직결됩니다!"
+    },
+    scene: 'assembly'
+  },
+  {
+    badge: 'STAGE 5 / 5',
+    speakerIcon: '😊', speakerName: '시공팀 박팀장',
+    text: '설치 완료! 고객님이 만족스러워합니다.\n마지막 마무리는 어떻게 하시겠습니까?',
+    options: [
+      { text: 'A. 서명만 빠르게 받고 퇴근!', correct: false },
+      { text: 'B. 작동 시연, 뒷정리, 완벽한 마무리 인사까지', correct: true }
+    ],
+    feedback: {
+      correct: '✅ 완벽한 마침표! 고객의 첫 경험이 브랜드의 영원한 첫인상이 됩니다.',
+      wrong:   "❌ 포장재가 그대로 남았습니다. '대충 하네' 한마디가 리뷰가 됩니다."
+    },
+    scene: 'complete'
+  }
+];
+
+// ═══════════════════════════════════════════════
+//  게임 상태
+// ═══════════════════════════════════════════════
+let G = {
+  stage: 0, score: 0,
+  frame: 0, cloudX: 0,
+  typing: false, typingText: '', typingFull: '', typingIdx: 0,
+  answered: false
+};
+
+// ═══════════════════════════════════════════════
+//  공통 드로잉 유틸
+// ═══════════════════════════════════════════════
+function drawDaySky() {
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#4ab8e8');
+  g.addColorStop(1, '#b8e4f8');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+}
+
+function drawDawnSky() {
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#0c1a28');
+  g.addColorStop(0.5, '#1c2e40');
+  g.addColorStop(1, '#243040');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+}
+
+function drawGrass() {
+  px(0, 240, W, 60, '#5a9e3a');
+  px(0, 238, W, 4,  '#4a8e28');
+  for (let x = 0; x < W; x += 55) px(x, 238, 2, 3, '#3a7e18');
+}
+
+function drawSun(x, y) {
+  const rays = [
+    [x-6,y-22,6,4],[x-6,y+18,6,4],[x-22,y-6,4,16],[x+18,y-6,4,16],
+    [x-18,y-18,4,4],[x+14,y-18,4,4],[x-18,y+14,4,4],[x+14,y+14,4,4]
+  ];
+  rays.forEach(([a,b,c,d]) => px(a, b, c, d, '#ffe060'));
+  px(x-10, y-10, 20, 20, '#fff176');
+  px(x-8,  y-8,  16, 16, '#ffee44');
+}
+
+function drawClouds(off) {
+  const clouds = [[20,25,72,18],[185,16,88,22],[345,30,68,16],[440,18,75,20]];
+  clouds.forEach(([cx, cy, cw, ch]) => {
+    const rx = ((cx + off) % (W + 130)) - 65;
+    px(rx,        cy,     cw,    ch,   'rgba(255,255,255,0.90)');
+    px(rx+10,     cy-10,  cw-20, 14,   'rgba(255,255,255,0.94)');
+    px(rx+cw-26,  cy-4,   24,    12,   'rgba(255,255,255,0.85)');
+  });
+}
+
+function drawStars() {
+  [[28,18],[85,42],[138,14],[205,33],[262,17],[328,40],[392,21],[460,36],[498,11]]
+    .forEach(([x,y]) => px(x, y, 2, 2, 'rgba(255,255,255,0.75)'));
+}
+
+function drawAptWindow(x, y, w, h) {
+  if (x + w > W - 16) return; // 건물 바깥 잘림 방지
+  px(x,      y,     w,    h,    '#87ceeb');
+  px(x,      y,     w,    3,    '#5ab0d8');
+  px(x+w/2,  y,     2,    h,    '#5ab0d8');
+  px(x,      y+h/2, w,    2,    '#5ab0d8');
+  px(x+2,    y+3,   w/2-4,h/2-5,'rgba(255,255,255,0.35)');
+}
+
+// ═══════════════════════════════════════════════
+//  캐릭터 드로잉
+// ═══════════════════════════════════════════════
+// 시공팀 박팀장 (주황 유니폼, 흰 헬멧)
+function drawWorker(x, y, opts) {
+  opts = opts || {};
+  const walk  = opts.walk  || false;
+  const wave  = opts.wave  || false;
+  const face  = opts.face  || 'normal'; // 'normal' | 'smile'
+  const f     = G.frame;
+  const leg   = walk ? Math.sin(f / 6) * 4 : 0;
+  const arm   = walk ? Math.cos(f / 6) * 4 : 0;
+
+  // 그림자
+  ctx.fillStyle = 'rgba(0,0,0,0.22)';
+  ctx.beginPath(); ctx.ellipse(x, y + 2, 11, 4, 0, 0, Math.PI * 2); ctx.fill();
+
+  // 다리
+  px(x-7, y-14, 6, 16 + leg, '#cc3a20');
+  px(x+1,  y-14, 6, 16 - leg, '#cc3a20');
+  // 신발
+  px(x-9,  y+2+leg, 10, 4, '#222');
+  px(x+1,  y+2-leg, 10, 4, '#222');
+
+  // 몸통
+  px(x-9,  y-28, 18, 16, '#ff5c39');
+  px(x-9,  y-28, 18, 3,  '#ff7a5c');
+  // 가슴 포켓
+  px(x-4,  y-24,  7,  8, '#cc3a20');
+  px(x-3,  y-22,  5,  2, '#fff');
+
+  // 왼팔
+  px(x-14, y-26+arm,  6, 14, '#ff5c39');
+  px(x-14, y-13+arm,  6,  6, '#ffccbc');
+  // 오른팔 (흔들기 or 기본)
+  if (wave) {
+    px(x+8,  y-36,  6, 14, '#ff5c39');
+    px(x+8,  y-23,  6,  6, '#ffccbc');
+  } else {
+    px(x+8,  y-26-arm,  6, 14, '#ff5c39');
+    px(x+8,  y-13-arm,  6,  6, '#ffccbc');
+  }
+
+  // 머리
+  px(x-8,  y-42, 16, 16, '#ffccbc');
+  // 흰 헬멧
+  px(x-9,  y-44, 18, 9, '#ffffff');
+  px(x-9,  y-44, 18, 3, '#dddddd');
+  px(x-8,  y-35, 2,  4, '#aaaaaa');
+  px(x+6,  y-35, 2,  4, '#aaaaaa');
+  // 눈
+  px(x-5,  y-37, 3, 3, '#333');
+  px(x+2,  y-37, 3, 3, '#333');
+  // 입
+  if (face === 'smile') {
+    px(x-4,  y-32, 2, 2, '#c08060');
+    px(x-2,  y-30, 2, 2, '#c08060');
+    px(x,    y-30, 4, 2, '#c08060');
+    px(x+4,  y-32, 2, 2, '#c08060');
+  } else if (walk) {
+    px(x-3,  y-32, 6, 2, '#c08060');
+  } else {
+    px(x-3,  y-32, 2, 2, '#c08060');
+    px(x+1,  y-32, 2, 2, '#c08060');
+  }
+}
+
+// 현장 관리자 김반장 (네이비 + 노란 헬멧)
+function drawManager(x, y) {
+  ctx.fillStyle = 'rgba(0,0,0,0.22)';
+  ctx.beginPath(); ctx.ellipse(x, y+2, 11, 4, 0, 0, Math.PI*2); ctx.fill();
+
+  px(x-7, y-14, 6, 16, '#1e3060');
+  px(x+1,  y-14, 6, 16, '#1e3060');
+  px(x-9,  y+2,  10, 4, '#222');
+  px(x+1,  y+2,  10, 4, '#222');
+
+  px(x-9,  y-28, 18, 16, '#2a4a8a');
+  px(x-9,  y-28, 18,  3, '#3a5aaa');
+  px(x-4,  y-24,  7,  8, '#1a3a7a');
+  px(x-3,  y-22,  5,  2, '#58bf6f');
+
+  px(x-14, y-26,  6, 14, '#2a4a8a');
+  px(x-14, y-13,  6,  6, '#ffccbc');
+  px(x+8,  y-26,  6, 14, '#2a4a8a');
+  px(x+8,  y-13,  6,  6, '#ffccbc');
+
+  px(x-8,  y-42, 16, 16, '#ffccbc');
+  // 노란 헬멧
+  px(x-9,  y-44, 18, 9, '#ffe600');
+  px(x-9,  y-44, 18, 3, '#ffd000');
+  px(x-8,  y-35, 2,  4, '#cc9900');
+  px(x+6,  y-35, 2,  4, '#cc9900');
+
+  px(x-5,  y-37, 3, 3, '#333');
+  px(x+2,  y-37, 3, 3, '#333');
+  px(x-3,  y-32, 2, 2, '#c08060');
+  px(x+1,  y-32, 2, 2, '#c08060');
+}
+
+// 고객 (베이지/일반복)
+function drawCustomer(x, y) {
+  ctx.fillStyle = 'rgba(0,0,0,0.18)';
+  ctx.beginPath(); ctx.ellipse(x, y+2, 10, 4, 0, 0, Math.PI*2); ctx.fill();
+
+  px(x-6,  y-12, 5, 14, '#4a3828');
+  px(x+1,  y-12, 5, 14, '#4a3828');
+  px(x-8,  y+2,  9,  4, '#333');
+  px(x+1,  y+2,  9,  4, '#333');
+
+  px(x-8,  y-26, 16, 15, '#c8a060');
+  px(x-8,  y-26, 16,  3, '#d8b070');
+
+  px(x-13, y-24,  6, 13, '#c8a060');
+  px(x-13, y-12,  6,  6, '#ffccbc');
+  px(x+7,  y-24,  6, 13, '#c8a060');
+  px(x+7,  y-12,  6,  6, '#ffccbc');
+
+  px(x-7,  y-40, 14, 14, '#ffccbc');
+  // 머리카락
+  px(x-8,  y-42, 16,  5, '#3a2810');
+  px(x-8,  y-38,  3,  3, '#3a2810');
+
+  px(x-4,  y-35, 3, 3, '#333');
+  px(x+1,  y-35, 3, 3, '#333');
+  // 웃는 입
+  px(x-3,  y-30, 2, 2, '#c08060');
+  px(x-1,  y-28, 4, 2, '#c08060');
+  px(x+3,  y-30, 2, 2, '#c08060');
+}
+
+// ═══════════════════════════════════════════════
+//  오브젝트 드로잉
+// ═══════════════════════════════════════════════
+function drawBox(x, y, w, h, base, top) {
+  px(x,   y,   w, h,   base);
+  px(x,   y,   w, 4,   top);
+  px(x,   y,   3, h,   top);
+  px(x+w-3, y, 3, h,   'rgba(0,0,0,0.2)');
+}
+
+// 완성된 안마의자
+function drawChairFull(x, y) {
+  // 다리 4개
+  px(x+2,   y+52, 6, 14, '#3a2048');
+  px(x+32,  y+52, 6, 14, '#3a2048');
+  px(x+2,   y+60, 6,  6, '#2a1038');
+  px(x+32,  y+60, 6,  6, '#2a1038');
+  // 좌석
+  px(x,     y+32, 40, 22, '#7050a0');
+  px(x,     y+32, 40,  4, '#8060b0');
+  // 등받이
+  px(x+4,   y,    32, 35, '#604880');
+  px(x+4,   y,    32,  4, '#7058a0');
+  // 팔걸이
+  px(x-6,   y+10,  8, 28, '#503870');
+  px(x+38,  y+10,  8, 28, '#503870');
+  // 헤드레스트
+  px(x+6,   y-12, 28, 14, '#503870');
+  px(x+6,   y-12, 28,  3, '#604880');
+  // 광택
+  px(x+6,   y+2,  14, 6, 'rgba(255,255,255,0.18)');
+  px(x+8,   y+34,  10, 4, 'rgba(255,255,255,0.12)');
+}
+
+// 넉다운 부재들 (분해 상태)
+function drawParts(cx, y) {
+  px(cx-55, y,     52, 8, '#604880');
+  px(cx-55, y+14,  36, 8, '#503870');
+  px(cx-55, y+28,  44, 8, '#7050a0');
+  px(cx+5,  y,      8, 52, '#503870');
+  px(cx+20, y+12,   8, 40, '#604880');
+  drawBox(cx+36, y,      22, 16, '#3a2048', '#6a5090');
+  drawBox(cx+36, y+22,   22, 12, '#3a2048', '#6a5090');
+  // 나사/부품 작은 것
+  px(cx-50, y+2,    3, 3, '#aaa');
+  px(cx+8,  y+2,    3, 3, '#aaa');
+}
+
+// 완성 의자 + 후광
+function drawChairGlow(x, y) {
+  const f = G.frame;
+  const pulse = Math.sin(f / 18) * 8;
+
+  // 바깥 후광 레이어 3단계
+  [
+    [90 + pulse,  'rgba(88,191,111,0.10)'],
+    [68 + pulse * 0.7, 'rgba(88,191,111,0.18)'],
+    [46,          'rgba(88,191,111,0.28)']
+  ].forEach(([r, c]) => {
+    ctx.fillStyle = c;
+    ctx.beginPath();
+    ctx.ellipse(x + 20, y + 36, r, r * 0.55, 0, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 반짝이는 작은 빛 파티클
+  [
+    [x - 42, y - 22], [x + 72, y - 12],
+    [x - 32, y + 14], [x + 82, y + 22],
+    [x + 20, y - 38], [x - 10, y + 30]
+  ].forEach(([px2, py2], i) => {
+    const sz = 3 + Math.sin(f / 11 + i) * 2;
+    const alpha = 0.35 + Math.sin(f / 9 + i) * 0.25;
+    ctx.fillStyle = `rgba(88,191,111,${alpha})`;
+    ctx.fillRect(px2, py2, sz, sz);
+  });
+
+  // 별빛 (노란색)
+  [
+    [x - 52, y - 32], [x + 82, y - 28],
+    [x + 90, y + 12], [x - 48, y + 22]
+  ].forEach(([sx, sy], i) => {
+    const b = 0.25 + Math.sin(f / 14 + i * 1.4) * 0.28;
+    ctx.fillStyle = `rgba(255,230,0,${b})`;
+    ctx.fillRect(sx, sy, 5, 5);
+    ctx.fillRect(sx + 1, sy - 3, 3, 3);
+  });
+
+  // 의자 본체
+  drawChairFull(x, y);
+
+  // 완료 체크 뱃지
+  px(x + 12, y - 36, 20, 20, '#58bf6f');
+  px(x + 12, y - 36, 20,  3, '#3a9a50');
+  px(x + 16, y - 26,  5,  8, '#fff');
+  px(x + 21, y - 30,  9,  4, '#fff');
+}
+
+// ═══════════════════════════════════════════════
+//  씬 드로잉 함수들
+// ═══════════════════════════════════════════════
+
+// ── SCENE 1: 창고 (새벽) ──────────────────────
+function drawWarehouse() {
+  drawDawnSky();
+  drawStars();
+
+  // 달 (초승달)
+  px(462, 22, 26, 26, '#e8e4c0');
+  px(477, 20, 14, 30, '#0c1a28'); // 그림자로 초승달 모양
+
+  // 지면
+  px(0, 240, W, 60, '#1a2a1a');
+  px(0, 238, W,  4, '#263826');
+
+  // ── 창고 건물 (벽 전체를 먼저 채움) ──
+  px(0, 72, W, 170, '#1c2c1c'); // 외벽 전체
+  px(0, 68, W,   8, '#2a4028'); // 지붕 상단 라인
+
+  // 지붕 패널 (물결형)
+  for (let i = 0; i < 14; i++) {
+    px(i * 38, 62, 36, 12, i % 2 === 0 ? '#284228' : '#1a3018');
+  }
+  px(0, 60, W, 4, '#3a5038');
+
+  // 창고 안쪽 어두운 면
+  px(0, 80, W, 160, '#142014');
+
+  // 셔터 문 (열린 상태, 왼쪽)
+  px(24, 154, 108, 86, '#1e3a1e');
+  px(26, 156, 104, 82, '#0e1e0e');
+  for (let i = 0; i < 8; i++) px(26, 156 + i * 9, 104, 2, '#1e3a1e');
+  px(20, 148, 4, 92, '#2a4a2a');
+  px(134, 148, 4, 92, '#2a4a2a');
+
+  // 상단 창문 3개
+  [[190, 82], [300, 82], [410, 82]].forEach(([wx, wy]) => {
+    px(wx, wy, 52, 36, '#0c2828');
+    px(wx, wy, 52,  3, '#1a4838');
+    px(wx + 25, wy, 2, 36, '#1a4838');
+    px(wx, wy + 18, 52, 2, '#1a4838');
+    px(wx + 2, wy + 4, 22, 12, 'rgba(255,200,100,0.18)');
+  });
+
+  // LETUS WAREHOUSE 간판
+  px(168, 126, 184, 22, '#0a180a');
+  px(168, 126, 184,  2, '#58bf6f');
+  px(168, 146, 184,  2, '#58bf6f');
+  ctx.fillStyle = '#58bf6f';
+  ctx.font = "bold 10px 'Courier New', monospace";
+  ctx.textAlign = 'center';
+  ctx.fillText('LETUS  WAREHOUSE', 260, 141);
+
+  // 팔레트 + 박스 더미 (오른쪽)
+  px(295, 212, 130, 6, '#5a3a18');
+  for (let bx = 0; bx < 3; bx++) {
+    for (let by = 0; by < 2; by++) {
+      const colors = [['#2a5030','#3a7040'],['#2a3a58','#3a5078'],['#582a2a','#783a3a']];
+      drawBox(296 + bx * 40, 182 - by * 24, 36, 20, colors[bx][0], colors[bx][1]);
+    }
+  }
+
+  // 손수레
+  px(224, 208, 10, 32, '#444');
+  px(209, 202, 40,  8, '#555');
+  px(214, 237, 8, 8, '#333');
+  px(234, 237, 8, 8, '#333');
+
+  // 천장 조명 빛
+  [[75,80],[250,80],[420,80]].forEach(([lx, ly]) => {
+    const g = ctx.createRadialGradient(lx, ly + 30, 2, lx, ly + 30, 38);
+    g.addColorStop(0, 'rgba(255,230,150,0.18)');
+    g.addColorStop(1, 'rgba(255,230,150,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(lx - 38, ly, 76, 60);
+    px(lx - 3, ly, 6, 12, '#bbb');
+    px(lx - 8, ly + 10, 16, 4, '#ccc');
+  });
+
+  // 관리자 캐릭터 (창고 앞)
+  drawManager(160, 238);
+}
+
+// ── SCENE 2: 트럭 (아침) ─────────────────────
+function drawTruck() {
+  drawDaySky();
+  drawSun(460, 42);
+  drawClouds(G.cloudX);
+
+  // 배경 건물들 (단순 실루엣)
+  [[18, 145, 58, 95, '#c0a870'], [98, 162, 42, 78, '#b89858'],
+   [438, 132, 68, 108, '#c8b08a'], [376, 152, 52, 88, '#b8a068']]
+    .forEach(([x, y, w, h, c]) => {
+      px(x, y, w, h, c);
+      for (let wy = y + 10; wy < y + h - 18; wy += 24) {
+        for (let wx = x + 5; wx < x + w - 10; wx += 17) {
+          px(wx, wy, 11, 14, 'rgba(140,190,235,0.65)');
+          px(wx, wy, 11, 2,  'rgba(90,150,200,0.8)');
+        }
+      }
+    });
+
+  // 도로
+  px(0, 240, W, 60, '#666');
+  px(0, 238, W,  4, '#777');
+  for (let x = 0; x < W; x += 62) px(x, 262, 38, 5, '#888');
+
+  // ── 트럭 본체 ──
+  const TX = 38;
+
+  // 짐칸
+  px(TX,     148, 246, 92, '#2a4a8a');
+  px(TX,     143,  246, 8,  '#1a3a7a');
+  px(TX,     148,  246, 5,  '#3a5aaa');
+  // 짐칸 수직선
+  for (let i = 68; i < 244; i += 38) px(TX + i, 153, 2, 84, '#1a3a7a');
+  px(TX, 192, 246, 2, '#1a3a7a');
+  // LETUS 로고
+  px(TX + 4, 152, 238, 15, '#0a1a3a');
+  ctx.fillStyle = '#58bf6f';
+  ctx.font = "bold 9px 'Courier New', monospace";
+  ctx.textAlign = 'left';
+  ctx.fillText('LETUS  FULFILLMENT', TX + 10, 163);
+  // 의자 실루엣 4개
+  [TX + 6, TX + 64, TX + 122, TX + 180].forEach(sx => {
+    px(sx,    196, 36, 30, '#3a5a7a');
+    px(sx+28, 182, 8,  24, '#3a5a7a');
+    px(sx,    222, 8,   8, '#2a4a6a');
+    px(sx+28, 222, 8,   8, '#2a4a6a');
+  });
+
+  // 운전석 캡
+  px(TX+246, 136, 82, 104, '#1a3a7a');
+  px(TX+246, 136, 82,   6, '#0a2a6a');
+  // 앞유리
+  px(TX+254, 145, 64, 46, '#87ceeb');
+  px(TX+254, 145, 64,  3, '#5ab0d8');
+  px(TX+284, 145,  2, 46, '#5ab0d8');
+  // 사이드미러
+  px(TX+238, 153,  8, 10, '#2a4a8a');
+  // 그릴
+  px(TX+246, 196, 82, 16, '#111');
+  for (let i = 0; i < 5; i++) px(TX + 250 + i * 14, 198, 10, 12, '#1a1a1a');
+  // 헤드라이트
+  px(TX+318, 200, 18, 10, '#ffe080');
+  px(TX+318, 200, 18,  3, '#fff8a0');
+
+  // 바퀴 3개
+  [TX + 68, TX + 188, TX + 296].forEach(wx => {
+    px(wx-15, 230, 30, 30, '#111');
+    px(wx-11, 234, 22, 22, '#1e1e1e');
+    px(wx-6,  239, 12, 12, '#333');
+    px(wx-3,  242,  6,  6, '#555');
+  });
+
+  // 운전석 팀장 실루엣 (유리 뒤)
+  px(TX+258, 152, 20, 22, '#ffccbc');
+  px(TX+256, 145, 24, 10, '#fff');
+  px(TX+260, 170,  6,  6, '#ffccbc');
+  px(TX+272, 170,  6,  6, '#ffccbc');
+}
+
+// ── SCENE 3: 현관문 (낮) ─────────────────────
+function drawDoor() {
+  drawDaySky();
+  drawSun(448, 38);
+  drawClouds(G.cloudX * 0.75 + 55);
+  drawGrass();
+
+  // ── 아파트 건물: 외벽을 캔버스 전체로 채운 뒤 창문 그리기 ──
+  // 외벽 전체
+  px(55, 30, W - 70, 210, '#c8b89a');
+  // 건물 좌우 테두리
+  px(55, 30, 4, 210, '#b0a080');
+  px(W - 19, 30, 4, 210, '#b0a080');
+  // 건물 상단 테두리
+  px(55, 30, W - 70, 5, '#b0a080');
+  // 층 구분선
+  px(55, 100, W - 70, 3, '#b0a080');
+  px(55, 162, W - 70, 3, '#b0a080');
+
+  // 1층 창문
+  [[68,40],[136,40],[288,40],[356,40],[424,40]].forEach(([wx,wy]) => drawAptWindow(wx, wy, 52, 46));
+  // 2층 창문
+  [[68,108],[136,108],[288,108],[356,108],[424,108]].forEach(([wx,wy]) => drawAptWindow(wx, wy, 52, 40));
+  // 3층 창문 (얕음)
+  [[68,170],[136,170],[288,170],[356,170],[424,170]].forEach(([wx,wy]) => drawAptWindow(wx, wy, 52, 28));
+
+  // 현관 포치
+  px(192, 200, 136, 42, '#b0a070');
+  px(192, 197, 136,  6, '#9a8a60');
+
+  // 현관문
+  px(206, 160, 108, 82, '#4a3520');
+  px(206, 160, 108,  5, '#6a5030');
+  px(212, 165,  96, 76, '#5a4025');
+  // 문 패널
+  px(216,170,40,30,'#4a3018'); px(260,170,40,30,'#4a3018');
+  px(216,204,40,30,'#4a3018'); px(260,204,40,30,'#4a3018');
+  // 손잡이
+  px(280,196,10,4,'#888'); px(286,194,4,8,'#888');
+  // 호수판
+  px(234,153,52,13,'#555');
+  ctx.fillStyle = '#ddd';
+  ctx.font = "9px 'Courier New', monospace";
+  ctx.textAlign = 'center';
+  ctx.fillText('101호', 260, 163);
+
+  // 보양재 (주황 테이프)
+  px(195, 237, 130, 5, '#ff5c39');
+  px(189, 237, 7, 5, '#ff7a50');
+  px(324, 237, 7, 5, '#ff7a50');
+
+  // 팀장 (현관 왼쪽)
+  drawWorker(148, 238);
+
+  // 부재 더미 (현관 오른쪽)
+  drawBox(346, 210, 42, 14, '#604880', '#8060a0');
+  drawBox(348, 195, 32, 16, '#503870', '#705898');
+  drawBox(362, 182, 28, 14, '#604880', '#8060a0');
+}
+
+// ── SCENE 4: 조립 씬 (실내) ──────────────────
+function drawAssembly() {
+  // 실내 배경
+  px(0, 0, W, H,       '#f0ece0');
+  px(0, 0, W, 208,     '#e8e0d0');
+  px(0, 206, W, 4,     '#c8b89a');
+  px(0, 208, W, H-208, '#c8903a');
+  for (let x = 0; x < W; x += 60) px(x, 208, 2, H-208, '#b07828');
+  for (let y = 208; y < H; y += 30) px(0, y, W, 1, '#c08030');
+
+  // 창문 (오른쪽 벽)
+  px(390, 18, 104, 136, '#87ceeb');
+  px(390, 18, 104,   3, '#5ab0d8');
+  px(440, 18,   4, 136, '#5ab0d8');
+  px(390, 84,  104,   3, '#5ab0d8');
+  px(392, 20,  46, 62,  'rgba(255,255,255,0.38)');
+  px(444, 20,  46, 62,  'rgba(255,255,255,0.26)');
+
+  // 보양재 (바닥)
+  px(60, 204, 280, 6, 'rgba(255,92,57,0.35)');
+
+  // ── 왼쪽: 넉다운 부재 (조립 전) ──
+  ctx.fillStyle = 'rgba(0,0,0,0.07)';
+  ctx.fillRect(52, 172, 128, 10);
+  drawParts(58, 128);
+  // 레이블
+  px(56, 122, 58, 12, '#58bf6f');
+  ctx.fillStyle = '#fff';
+  ctx.font = "7px 'Courier New', monospace";
+  ctx.textAlign = 'left';
+  ctx.fillText('조립 전 부재', 60, 131);
+
+  // ── 중앙: 조립 중인 의자 (반완성) ──
+  ctx.fillStyle = 'rgba(0,0,0,0.07)';
+  ctx.fillRect(230, 205, 110, 8);
+  // 등받이
+  px(258, 140, 42, 72, '#604880');
+  px(258, 140, 42,  4, '#7058a0');
+  // 좌석
+  px(246, 192, 66, 22, '#7050a0');
+  px(246, 192, 66,  4, '#8060b0');
+  // 팔걸이 (한쪽만)
+  px(240, 180, 8, 36, '#503870');
+  // 다리 (두 개만)
+  px(250, 212, 6, 14, '#3a2048');
+  px(296, 212, 6, 14, '#3a2048');
+  // 나사 표시
+  px(262, 145, 4, 4, '#bbb'); px(292, 145, 4, 4, '#bbb');
+  px(250, 196, 4, 4, '#bbb');
+  // 공구 (렌치)
+  px(322, 162,  6, 26, '#888');
+  px(318, 160, 14,  6, '#888');
+  px(318, 182, 14,  6, '#888');
+  // 레이블
+  px(244, 122, 58, 12, '#ffe600');
+  ctx.fillStyle = '#000';
+  ctx.font = "7px 'Courier New', monospace";
+  ctx.textAlign = 'left';
+  ctx.fillText('조립 중...', 248, 131);
+
+  // 팀장 (의자 오른쪽에서 조립 작업 중)
+  drawWorker(370, 238);
+}
+
+// ── SCENE 5: 완성 씬 (실내, 후광) ────────────
+function drawComplete() {
+  px(0, 0, W, H,       '#f0ece0');
+  px(0, 0, W, 208,     '#e8e0d0');
+  px(0, 206, W, 4,     '#c8b89a');
+  px(0, 208, W, H-208, '#c8903a');
+  for (let x = 0; x < W; x += 60) px(x, 208, 2, H-208, '#b07828');
+  for (let y = 208; y < H; y += 30) px(0, y, W, 1, '#c08030');
+
+  // 창문 (오른쪽)
+  px(390, 18, 104, 136, '#87ceeb');
+  px(390, 18, 104,   3, '#5ab0d8');
+  px(440, 18,   4, 136, '#5ab0d8');
+  px(390, 84,  104,   3, '#5ab0d8');
+  px(392, 20,  46, 62,  'rgba(255,255,255,0.38)');
+
+  // 소파 (왼쪽 배경)
+  px(12, 174, 124, 34, '#8b6040');
+  px(7,  162,  14, 46, '#8b6040');
+  px(122, 162, 14, 46, '#8b6040');
+  px(12,  200, 124, 8, '#6a4828');
+
+  // ── 완성된 의자 + 후광 (중앙) ──
+  drawChairGlow(196, 138);
+
+  // ── 팀장 (오른쪽, 손 흔들며 인사) ──
+  drawWorker(428, 238, { wave: true, face: 'smile' });
+
+  // ── 고객 (왼쪽) ──
+  drawCustomer(72, 238);
+
+  // 말풍선 (고객 위)
+  px(82, 130, 90, 34, '#fff');
+  px(82, 130, 90,  2, '#ccc');
+  px(82, 162, 90,  2, '#ccc');
+  px(82, 130,  2, 34, '#ccc');
+  px(170,130,  2, 34, '#ccc');
+  // 꼬리
+  px(78, 154, 6, 8, '#fff');
+  px(76, 158, 4, 6, '#fff');
+  ctx.fillStyle = '#444';
+  ctx.font = "7px 'Galmuri11', monospace";
+  ctx.textAlign = 'left';
+  ctx.fillText('완벽해요! 😊', 87, 146);
+  ctx.fillText('감사합니다!', 89, 157);
+}
+
+// ═══════════════════════════════════════════════
+//  씬 디스패치
+// ═══════════════════════════════════════════════
+function drawScene(name) {
+  if      (name === 'warehouse') drawWarehouse();
+  else if (name === 'truck')     drawTruck();
+  else if (name === 'door')      drawDoor();
+  else if (name === 'assembly')  drawAssembly();
+  else if (name === 'complete')  drawComplete();
+}
+
+// ═══════════════════════════════════════════════
+//  타이핑 효과
+// ═══════════════════════════════════════════════
+let typingTimer = null;
+function typeText(text, onDone) {
+  G.typing = true;
+  G.typingText = ''; G.typingFull = text; G.typingIdx = 0;
+  document.getElementById('cursor-blink').style.display = 'inline-block';
+  clearInterval(typingTimer);
+  typingTimer = setInterval(() => {
+    if (G.typingIdx < G.typingFull.length) {
+      G.typingText += G.typingFull[G.typingIdx++];
+      document.getElementById('dialogue-text').innerText = G.typingText;
+    } else {
+      clearInterval(typingTimer);
+      G.typing = false;
+      document.getElementById('cursor-blink').style.display = 'none';
+      if (onDone) onDone();
+    }
+  }, 35);
+}
+
+// ═══════════════════════════════════════════════
+//  스테이지 표시
+// ═══════════════════════════════════════════════
+function showStage(idx) {
+  if (idx >= STAGES.length) { showEnding(); return; }
+  const s = STAGES[idx];
+  G.answered = false;
+
+  document.getElementById('stage-badge').innerText   = s.badge;
+  document.getElementById('speaker-icon').innerText  = s.speakerIcon;
+  document.getElementById('speaker-name').innerText  = s.speakerName;
+  document.getElementById('feedback-bar').style.display  = 'none';
+  document.getElementById('feedback-bar').className      = '';
+  document.getElementById('options-area').style.display  = 'none';
+  document.getElementById('moving-msg').style.display    = 'none';
+
+  typeText(s.text, () => {
+    const area = document.getElementById('options-area');
+    area.innerHTML = '';
+    area.style.display = 'flex';
+    s.options.forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'opt-btn';
+      btn.innerText = opt.text;
+      btn.onclick = () => makeChoice(i);
+      area.appendChild(btn);
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  선택 처리
+// ═══════════════════════════════════════════════
+function makeChoice(optIdx) {
+  if (G.typing || G.answered) return;
+  G.answered = true;
+
+  const s = STAGES[G.stage];
+  const isCorrect = s.options[optIdx].correct;
+  if (isCorrect) G.score++;
+
+  // 버튼 하이라이트
+  document.querySelectorAll('.opt-btn').forEach((btn, i) => {
+    btn.disabled = true;
+    if (i === optIdx) btn.classList.add(isCorrect ? 'highlight-correct' : 'highlight-wrong');
+    if (!isCorrect && s.options[i].correct) btn.classList.add('highlight-correct');
+  });
+
+  // 별 점등
+  if (isCorrect) {
+    setTimeout(() => {
+      const star = document.getElementById(`s${G.score}`);
+      if (star) star.classList.add('earned');
+    }, 200);
+  }
+
+  // 피드백
+  const fb = document.getElementById('feedback-bar');
+  fb.style.display = 'block';
+  fb.className = isCorrect ? 'correct' : 'wrong';
+  fb.innerText = isCorrect ? s.feedback.correct : s.feedback.wrong;
+
+  // 다음 스테이지로
+  setTimeout(() => {
+    G.stage++;
+    document.getElementById('options-area').style.display = 'none';
+    document.getElementById('feedback-bar').style.display = 'none';
+    document.getElementById('moving-msg').style.display   = 'block';
+    document.getElementById('dialogue-text').innerText    = '';
+
+    setTimeout(() => {
+      document.getElementById('moving-msg').style.display = 'none';
+      if (G.stage < STAGES.length) showStage(G.stage);
+      else showEnding();
+    }, 900);
+  }, 1600);
+}
+
+// ═══════════════════════════════════════════════
+//  엔딩
+// ═══════════════════════════════════════════════
+function showEnding() {
+  const sc = G.score;
+  let rank, title, titleColor, stars, desc;
+
+  if (sc === 5) {
+    rank = '👑'; title = '레터스급 전문가!'; titleColor = '#ffe600';
+    stars = '★★★★★';
+    desc = `<strong>완벽한 풀필먼트의 정석!</strong><br><br>창고 정리부터 고객 인사까지, 모든 단계를 프로답게 완수했습니다.<br><br>레터스와 함께라면 어떤 중량물도, 어떤 현관문도 문제없습니다. 사장님의 제품이 고객의 공간에서 가장 빛나는 모습으로 태어날 수 있도록 — 레터스가 그 마지막 10m를 책임집니다.`;
+  } else if (sc >= 3) {
+    rank = '🛠️'; title = '준수한 설치 관리자'; titleColor = '#58bf6f';
+    stars = '★'.repeat(sc) + '☆'.repeat(5 - sc);
+    desc = `<strong>${sc}점 / 5점</strong><br><br>대부분의 상황을 잘 처리했지만, 몇 가지 상황에서 브랜드 가치가 조금 깎였습니다.<br><br>가구 시공은 운송에서 설치까지의 과정 속에서 다양한 위험을 마주합니다. 레터스의 전문 시공팀과 함께 고객 경험을 완벽하게 완성하세요.`;
+  } else {
+    rank = '😰'; title = '위기의 사장님...'; titleColor = '#ff4466';
+    stars = '★'.repeat(sc) + '☆'.repeat(5 - sc);
+    desc = `<strong>${sc}점 / 5점</strong><br><br>박스만 옮긴다고 물류가 아닙니다.<br>브랜드 가치가 현관문 앞 10m에서 조용히 깎이고 있습니다.<br><br>고객의 첫 경험 = 브랜드의 영원한 첫인상.<br>레터스가 그 10m를 바꿔드릴 수 있습니다.`;
+  }
+
+  document.getElementById('end-rank').innerText  = rank;
+  document.getElementById('end-title').innerText = title;
+  document.getElementById('end-title').style.color = titleColor;
+  document.getElementById('end-stars').innerHTML = `<span style="color:var(--accent2);letter-spacing:4px">${stars}</span>`;
+  document.getElementById('end-desc').innerHTML  = desc;
+  document.getElementById('ending-screen').style.display = 'flex';
+}
+
+// ═══════════════════════════════════════════════
+//  게임 루프
+// ═══════════════════════════════════════════════
+function gameLoop() {
+  G.frame++;
+  G.cloudX = (G.cloudX + 0.4) % (W + 130);
+
+  ctx.clearRect(0, 0, W, H);
+  const sceneIdx = Math.min(G.stage, STAGES.length - 1);
+  drawScene(STAGES[sceneIdx].scene);
+
+  requestAnimationFrame(gameLoop);
+}
+
+// ═══════════════════════════════════════════════
+//  시작 / 재도전
+// ═══════════════════════════════════════════════
+function startGame() {
+  document.getElementById('title-screen').style.display = 'none';
+  showStage(0);
+  gameLoop();
+}
+
+function retryGame() {
+  G.stage = 0; G.score = 0; G.frame = 0; G.answered = false;
+  document.getElementById('ending-screen').style.display = 'none';
+  document.querySelectorAll('.star').forEach(s => s.classList.remove('earned'));
+  showStage(0);
+}
+</script>
+</body>
+</html>
